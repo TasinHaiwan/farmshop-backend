@@ -1,0 +1,248 @@
+{% extends "shop/base.html" %}
+{% block title %}Shops — FarmShop{% endblock %}
+{% block nav_shops %}active{% endblock %}
+
+{% block extra_head %}
+<style>
+  /* toolbar */
+  .toolbar {
+    position: relative; z-index: 10;
+    max-width: var(--max-w); margin: 0 auto;
+    padding: 0 var(--px);
+    transform: translateY(-50%);
+    display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;
+  }
+  .search-wrap { flex: 1; min-width: 200px; position: relative; }
+  .search-wrap input {
+    width: 100%; padding: .9rem 1rem .9rem 3rem;
+    border: none; border-radius: var(--r-pill);
+    background: #fff; box-shadow: var(--shadow);
+    font-family: 'DM Sans', sans-serif; font-size: .95rem; color: var(--ink);
+    outline: none; transition: box-shadow .2s;
+  }
+  .search-wrap input:focus { box-shadow: 0 0 0 3px rgba(82,183,136,.3), var(--shadow); }
+  .search-wrap input::placeholder { color: var(--mist); }
+  .search-icon {
+    position: absolute; left: 1.1rem; top: 50%; transform: translateY(-50%);
+    color: var(--mist); pointer-events: none;
+  }
+  .filter-pills { display: flex; gap: .5rem; flex-wrap: wrap; }
+  .fpill {
+    padding: .55rem 1.1rem; border-radius: var(--r-pill);
+    border: 1.5px solid var(--parchment); background: #fff;
+    font-size: .82rem; font-weight: 500; color: var(--earth);
+    cursor: pointer; transition: all .18s;
+    box-shadow: 0 2px 8px rgba(0,0,0,.05); white-space: nowrap;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .fpill:hover { border-color: var(--forest); color: var(--forest); }
+  .fpill.active { background: var(--forest); border-color: var(--forest); color: #fff; }
+
+  /* stats */
+  .stats-bar {
+    display: flex; gap: 2rem; flex-wrap: wrap;
+    background: var(--forest); border-radius: var(--r-card);
+    padding: 1.75rem 2rem; margin-bottom: 2.5rem;
+  }
+  .stat { flex: 1; min-width: 100px; }
+  .stat-num {
+    font-family: 'Playfair Display', serif;
+    font-size: 2rem; font-weight: 700; color: #fff; line-height: 1; margin-bottom: .2rem;
+  }
+  .stat-label { font-size: .75rem; color: rgba(255,255,255,.5); letter-spacing: .07em; text-transform: uppercase; }
+
+  /* grid */
+  .shops-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem; }
+  .shop-card {
+    background: #fff; border-radius: var(--r-card);
+    overflow: hidden; box-shadow: var(--shadow);
+    transition: transform .25s, box-shadow .25s;
+    text-decoration: none; color: inherit; display: block;
+    opacity: 0; animation: fadeUp .5s forwards;
+  }
+  .shop-card:hover { transform: translateY(-5px); box-shadow: var(--shadow-h); }
+  .card-banner {
+    height: 105px; position: relative;
+    display: flex; align-items: flex-end; padding: 1rem 1.25rem;
+  }
+  .banner-emoji {
+    font-size: 3rem; line-height: 1;
+    filter: drop-shadow(0 4px 10px rgba(0,0,0,.18));
+    transition: transform .3s;
+  }
+  .shop-card:hover .banner-emoji { transform: scale(1.1) rotate(-5deg); }
+  .status-badge {
+    position: absolute; top: .75rem; right: .75rem;
+    backdrop-filter: blur(6px); font-size: .68rem; font-weight: 700;
+    letter-spacing: .07em; padding: .28rem .7rem; border-radius: var(--r-pill);
+    text-transform: uppercase;
+  }
+  .status-open  { background: rgba(82,183,136,.22); border: 1px solid rgba(82,183,136,.4); color: #c5f5e0; }
+  .status-closed { background: rgba(0,0,0,.38); color: rgba(255,255,255,.7); }
+  .card-body { padding: 1.1rem 1.25rem 1.25rem; }
+  .card-name { font-family: 'Playfair Display', serif; font-size: 1.1rem; font-weight: 700; margin-bottom: .2rem; }
+  .card-tag { font-size: .78rem; color: var(--mist); margin-bottom: .9rem; }
+  .card-meta { display: flex; align-items: center; gap: .45rem; flex-wrap: wrap; font-size: .78rem; }
+  .dot { width: 3px; height: 3px; border-radius: 50%; background: var(--mist); }
+  .meta-chip { display: inline-flex; align-items: center; gap: .3rem; color: #666; }
+  .free-tag {
+    margin-left: auto; background: rgba(45,106,79,.08); color: var(--forest);
+    font-size: .7rem; font-weight: 700; padding: .22rem .6rem; border-radius: var(--r-pill);
+  }
+
+  /* items strip */
+  .items-section { margin-top: 3.5rem; }
+  .section-head {
+    display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 1.25rem;
+  }
+  .section-head h2 { font-family: 'Playfair Display', serif; font-size: 1.5rem; }
+  .section-head a { font-size: .85rem; color: var(--forest); font-weight: 500; text-decoration: none; }
+  .section-head a:hover { text-decoration: underline; }
+  .items-scroll {
+    display: flex; gap: 1rem; overflow-x: auto; padding-bottom: 1rem;
+    scrollbar-width: thin; scrollbar-color: var(--mist) transparent;
+  }
+  .item-card {
+    flex: 0 0 172px; background: #fff; border-radius: 14px;
+    padding: 1rem; box-shadow: 0 2px 12px rgba(0,0,0,.07);
+    transition: transform .2s, box-shadow .2s;
+  }
+  .item-card:hover { transform: translateY(-3px); box-shadow: var(--shadow); }
+  .item-emoji { font-size: 2.2rem; display: block; margin-bottom: .5rem; line-height: 1; }
+  .item-name { font-family: 'Playfair Display', serif; font-size: .92rem; font-weight: 700; margin-bottom: .12rem; }
+  .item-meta { font-size: .72rem; color: var(--mist); margin-bottom: .65rem; }
+  .item-foot { display: flex; align-items: center; justify-content: space-between; }
+  .item-price { font-size: .98rem; font-weight: 700; color: var(--forest); }
+  .org-badge {
+    font-size: .65rem; font-weight: 700; background: rgba(45,106,79,.1);
+    color: var(--forest); padding: .18rem .5rem; border-radius: var(--r-pill);
+  }
+  @media (max-width: 640px) {
+    .toolbar { transform: translateY(-40%); }
+    .stats-bar { gap: 1.2rem; padding: 1.25rem; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Hero -->
+<div class="page-hero">
+  <div class="page-hero-inner">
+    <span class="script">straight from the field</span>
+    <h1>Fresh, <em>Organic</em><br>Delivered to You</h1>
+    <p>Browse our curated farms and artisan producers — honest food, transparent sourcing.</p>
+  </div>
+</div>
+
+<!-- Toolbar -->
+<div class="toolbar">
+  <div class="search-wrap">
+    <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    <input type="text" id="searchInput" placeholder="Search shops or tags…" />
+  </div>
+  <div class="filter-pills">
+    <button class="fpill active" data-filter="all">All</button>
+    <button class="fpill" data-filter="open">Open now</button>
+    <button class="fpill" data-filter="free">Free delivery</button>
+  </div>
+</div>
+
+<!-- Main -->
+<main class="page-main" style="margin-top: 2rem;">
+  <div class="stats-bar">
+    <div class="stat"><div class="stat-num" id="sShops">—</div><div class="stat-label">Shops</div></div>
+    <div class="stat"><div class="stat-num" id="sItems">—</div><div class="stat-label">Products</div></div>
+    <div class="stat"><div class="stat-num" id="sOpen">—</div><div class="stat-label">Open Now</div></div>
+    <div class="stat"><div class="stat-num" id="sOrganic">—</div><div class="stat-label">Organic Items</div></div>
+  </div>
+
+  <p class="section-label">Our Producers</p>
+  <div class="shops-grid" id="shopsGrid">
+    <div class="loading-wrap" style="grid-column:1/-1"><div class="spinner"></div></div>
+  </div>
+
+  <div class="items-section">
+    <div class="section-head">
+      <h2>Featured Products</h2>
+      <a href="/items/browse/">See all →</a>
+    </div>
+    <div class="items-scroll" id="itemsScroll">
+      <div class="loading-wrap"><div class="spinner"></div></div>
+    </div>
+  </div>
+</main>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+const API = '';
+let allShops = [], allItems = [], activeFilter = 'all', searchQ = '';
+
+async function load() {
+  const [sr, ir] = await Promise.all([fetch(`${API}/api/shops/`), fetch(`${API}/api/items/`)]);
+  allShops = await sr.json();
+  allItems = await ir.json();
+  updateStats(); renderShops(); renderItems();
+}
+
+function updateStats() {
+  document.getElementById('sShops').textContent   = allShops.length;
+  document.getElementById('sItems').textContent   = allItems.length;
+  document.getElementById('sOpen').textContent    = allShops.filter(s => s.is_open).length;
+  document.getElementById('sOrganic').textContent = allItems.filter(i => i.is_organic).length;
+}
+
+function renderShops() {
+  const q = searchQ.toLowerCase();
+  const shops = allShops.filter(s => {
+    const ms = !q || s.name.toLowerCase().includes(q) || s.tag.toLowerCase().includes(q);
+    const mf = activeFilter==='all' ? true : activeFilter==='open' ? s.is_open : s.delivery_fee.toLowerCase()==='free';
+    return ms && mf;
+  });
+  const grid = document.getElementById('shopsGrid');
+  if (!shops.length) { grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><span class="icon">🔍</span><p>No shops match your search.</p></div>`; return; }
+  grid.innerHTML = shops.map((s,i) => `
+    <a class="shop-card" href="/shops/${s.id}/browse/" style="animation-delay:${i*.07}s">
+      <div class="card-banner" style="background:#${s.color_hex}1a;border-bottom:1px solid #${s.color_hex}22">
+        <span class="banner-emoji">${s.emoji}</span>
+        <span class="status-badge ${s.is_open?'status-open':'status-closed'}">${s.is_open?'● Open':'Closed'}</span>
+      </div>
+      <div class="card-body">
+        <div class="card-name">${s.name}</div>
+        <div class="card-tag">${s.tag}</div>
+        <div class="card-meta">
+          <span class="star-rating">★ ${s.rating} <small>(${s.review_count})</small></span>
+          <span class="dot"></span>
+          <span class="meta-chip">⏱ ${s.delivery_time}</span>
+          <span class="dot"></span>
+          <span class="meta-chip">🚚 ${s.delivery_fee}</span>
+          ${s.delivery_fee.toLowerCase()==='free'?'<span class="free-tag">FREE</span>':''}
+        </div>
+      </div>
+    </a>`).join('');
+}
+
+function renderItems() {
+  const scroll = document.getElementById('itemsScroll');
+  scroll.innerHTML = allItems.slice(0,10).map(it => `
+    <div class="item-card" onclick="location.href='/items/${it.id}/browse/'">
+      <span class="item-emoji">${it.emoji}</span>
+      <div class="item-name">${it.name}</div>
+      <div class="item-meta">${it.unit} · ${it.shop_name}</div>
+      <div class="item-foot">
+        <span class="item-price">৳${it.price}</span>
+        ${it.is_organic?'<span class="org-badge">Organic</span>':''}
+      </div>
+    </div>`).join('');
+}
+
+document.querySelectorAll('.fpill').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('.fpill').forEach(p => p.classList.remove('active'));
+  b.classList.add('active'); activeFilter = b.dataset.filter; renderShops();
+}));
+document.getElementById('searchInput').addEventListener('input', e => { searchQ = e.target.value; renderShops(); });
+load().catch(() => {
+  document.getElementById('shopsGrid').innerHTML = `<div class="empty-state" style="grid-column:1/-1"><span class="icon">🌧</span><p>Could not reach API.</p></div>`;
+});
+</script>
+{% endblock %}

@@ -1,0 +1,173 @@
+{% extends "shop/base.html" %}
+{% block title %}Shop Detail — FarmShop{% endblock %}
+{% block nav_shops %}active{% endblock %}
+
+{% block extra_head %}
+<style>
+  .shop-hero {
+    padding: 2.5rem var(--px) 5rem;
+    background: var(--forest);
+    position: relative; overflow: hidden; z-index: 1;
+  }
+  .shop-hero::before {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(135deg, rgba(0,0,0,.15) 0%, transparent 60%);
+  }
+  .shop-hero-inner {
+    position: relative; z-index: 1;
+    max-width: var(--max-w); margin: 0 auto;
+    display: flex; align-items: flex-end; gap: 2rem; flex-wrap: wrap;
+  }
+  .shop-emoji-wrap {
+    width: 96px; height: 96px; border-radius: 22px;
+    display: grid; place-items: center; font-size: 3.2rem;
+    box-shadow: 0 8px 32px rgba(0,0,0,.25); flex-shrink: 0;
+    opacity: 0; animation: fadeUp .5s .1s forwards;
+  }
+  .shop-info { flex: 1; min-width: 200px; }
+  .shop-info h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(1.8rem, 4vw, 2.8rem);
+    color: #fff; line-height: 1.1; margin-bottom: .4rem;
+    opacity: 0; animation: fadeUp .5s .15s forwards;
+  }
+  .shop-tag { color: rgba(255,255,255,.5); font-size: .9rem; margin-bottom: 1rem; opacity: 0; animation: fadeUp .5s .2s forwards; }
+  .shop-badges { display: flex; gap: .6rem; flex-wrap: wrap; opacity: 0; animation: fadeUp .5s .25s forwards; }
+  .sbadge {
+    display: inline-flex; align-items: center; gap: .3rem;
+    background: rgba(255,255,255,.12); backdrop-filter: blur(8px);
+    color: #fff; border-radius: var(--r-pill);
+    padding: .38rem .9rem; font-size: .8rem; font-weight: 500;
+    border: 1px solid rgba(255,255,255,.18);
+  }
+  .sbadge.open   { background: rgba(82,183,136,.28); border-color: rgba(82,183,136,.5); }
+  .sbadge.closed { background: rgba(0,0,0,.28); }
+
+  .overlap-card {
+    position: relative; z-index: 10;
+    max-width: var(--max-w); margin: -2.2rem auto 0;
+    padding: 0 var(--px);
+  }
+  .info-row {
+    background: #fff; border-radius: var(--r-card);
+    padding: 1.4rem 2rem; box-shadow: var(--shadow-h);
+    display: flex; gap: 1.5rem; flex-wrap: wrap; align-items: center;
+  }
+  .istat { flex: 1; min-width: 90px; text-align: center; }
+  .istat-num { font-family: 'Playfair Display', serif; font-size: 1.5rem; font-weight: 700; color: var(--forest); }
+  .istat-lbl { font-size: .7rem; color: var(--mist); letter-spacing: .07em; text-transform: uppercase; margin-top: .15rem; }
+  .idiv { width: 1px; height: 36px; background: var(--parchment); }
+
+  .items-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(195px, 1fr)); gap: 1.2rem; }
+  .item-card {
+    background: #fff; border-radius: var(--r-card);
+    padding: 1.2rem; box-shadow: var(--shadow);
+    transition: transform .22s, box-shadow .22s; cursor: pointer;
+    opacity: 0; animation: fadeUp .4s forwards;
+  }
+  .item-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-h); }
+  .color-bar { height: 4px; border-radius: 2px; margin-bottom: .9rem; }
+  .i-emoji { font-size: 2.4rem; display: block; margin-bottom: .55rem; }
+  .i-name { font-family: 'Playfair Display', serif; font-size: 1rem; font-weight: 700; margin-bottom: .12rem; }
+  .i-unit { font-size: .74rem; color: var(--mist); margin-bottom: .7rem; }
+  .i-row { display: flex; align-items: center; justify-content: space-between; }
+  .i-price { font-size: 1.05rem; font-weight: 700; color: var(--forest); }
+  .i-rating { font-size: .78rem; color: var(--amber); font-weight: 600; }
+  .org-tag {
+    margin-top: .55rem; display: inline-block;
+    background: rgba(45,106,79,.08); color: var(--forest);
+    font-size: .67rem; font-weight: 700;
+    padding: .18rem .52rem; border-radius: var(--r-pill);
+  }
+  @media (max-width: 640px) { .idiv { display: none; } .info-row { gap: 1rem; padding: 1rem; } }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="shop-hero" id="shopHero">
+  <div class="shop-hero-inner">
+    <div class="loading-wrap" style="width:100%"><div class="spinner"></div></div>
+  </div>
+</div>
+
+<div class="overlap-card">
+  <div class="info-row" id="infoRow" style="display:none">
+    <div class="istat"><div class="istat-num" id="iRating">—</div><div class="istat-lbl">Rating</div></div>
+    <div class="idiv"></div>
+    <div class="istat"><div class="istat-num" id="iReviews">—</div><div class="istat-lbl">Reviews</div></div>
+    <div class="idiv"></div>
+    <div class="istat"><div class="istat-num" id="iTime">—</div><div class="istat-lbl">Delivery</div></div>
+    <div class="idiv"></div>
+    <div class="istat"><div class="istat-num" id="iFee">—</div><div class="istat-lbl">Fee</div></div>
+    <div class="idiv"></div>
+    <div class="istat"><div class="istat-num" id="iCount">—</div><div class="istat-lbl">Products</div></div>
+  </div>
+</div>
+
+<div class="breadcrumb" style="margin-top:2.5rem">
+  <a href="/shops/browse/">Shops</a> <span>›</span> <span id="bcName">…</span>
+</div>
+
+<main class="page-main">
+  <p class="section-label" id="itemsLabel" style="margin-top:1.5rem"></p>
+  <div class="items-grid" id="itemsGrid">
+    <div class="loading-wrap" style="grid-column:1/-1"><div class="spinner"></div></div>
+  </div>
+</main>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+const shopId = window.location.pathname.split('/').filter(Boolean)[1];
+
+async function load() {
+  const res = await fetch(`/api/shops/${shopId}/`);
+  if (!res.ok) throw new Error();
+  const shop = await res.json();
+
+  // Hero
+  document.getElementById('bcName').textContent = shop.name;
+  document.getElementById('shopHero').innerHTML = `
+    <div class="shop-hero-inner">
+      <div class="shop-emoji-wrap" style="background:#${shop.color_hex}33">${shop.emoji}</div>
+      <div class="shop-info">
+        <h1>${shop.name}</h1>
+        <p class="shop-tag">${shop.tag}</p>
+        <div class="shop-badges">
+          <span class="sbadge ${shop.is_open?'open':'closed'}">${shop.is_open?'● Open Now':'● Closed'}</span>
+          <span class="sbadge">⏱ ${shop.delivery_time}</span>
+          <span class="sbadge">🚚 ${shop.delivery_fee}</span>
+          <span class="sbadge">★ ${shop.rating}</span>
+        </div>
+      </div>
+    </div>`;
+
+  // Info row
+  document.getElementById('iRating').textContent  = '★ ' + shop.rating;
+  document.getElementById('iReviews').textContent = shop.review_count.toLocaleString();
+  document.getElementById('iTime').textContent    = shop.delivery_time;
+  document.getElementById('iFee').textContent     = shop.delivery_fee;
+  document.getElementById('iCount').textContent   = (shop.items||[]).length;
+  document.getElementById('infoRow').style.display = 'flex';
+
+  // Items
+  const items = shop.items || [];
+  document.getElementById('itemsLabel').textContent = `${items.length} Product${items.length!==1?'s':''} Available`;
+  const grid = document.getElementById('itemsGrid');
+  if (!items.length) { grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><span class="icon">🌱</span><p>No products listed yet.</p></div>`; return; }
+  grid.innerHTML = items.map((it,i) => `
+    <div class="item-card" style="animation-delay:${i*.06}s" onclick="location.href='/items/${it.id}/browse/'">
+      <div class="color-bar" style="background:#${it.color_hex}"></div>
+      <span class="i-emoji">${it.emoji}</span>
+      <div class="i-name">${it.name}</div>
+      <div class="i-unit">${it.unit}</div>
+      <div class="i-row"><span class="i-price">৳${it.price}</span><span class="i-rating">★ ${it.rating}</span></div>
+      ${it.is_organic?'<span class="org-tag">🌿 Organic</span>':''}
+    </div>`).join('');
+}
+
+load().catch(() => {
+  document.getElementById('shopHero').innerHTML = `<div class="empty-state" style="width:100%"><span class="icon">🌧</span><p>Could not load shop.</p></div>`;
+});
+</script>
+{% endblock %}

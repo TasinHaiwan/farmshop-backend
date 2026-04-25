@@ -1,0 +1,223 @@
+{% extends "shop/base.html" %}
+{% block title %}Product Detail — FarmShop{% endblock %}
+{% block nav_items %}active{% endblock %}
+
+{% block extra_head %}
+<style>
+  .item-hero {
+    background: var(--forest); padding: 2.5rem var(--px) 5rem;
+    position: relative; overflow: hidden; z-index: 1;
+  }
+  .item-hero-inner {
+    max-width: var(--max-w); margin: 0 auto;
+    display: flex; align-items: center; gap: 2.5rem; flex-wrap: wrap;
+  }
+  .item-big-emoji {
+    font-size: 6rem; line-height: 1; flex-shrink: 0;
+    filter: drop-shadow(0 8px 24px rgba(0,0,0,.3));
+    opacity: 0; animation: fadeUp .5s .1s forwards;
+  }
+  .item-hero-info { flex: 1; min-width: 220px; }
+  .item-hero-info .script {
+    font-family: 'Petit Formal Script', cursive;
+    color: var(--sage); font-size: .95rem; display: block; margin-bottom: .3rem;
+    opacity: 0; animation: fadeUp .5s .15s forwards;
+  }
+  .item-hero-info h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(2rem, 5vw, 3.2rem);
+    color: #fff; line-height: 1.1; margin-bottom: .4rem;
+    opacity: 0; animation: fadeUp .5s .2s forwards;
+  }
+  .item-hero-info h1 em { color: var(--sage); font-style: italic; }
+  .item-from {
+    color: rgba(255,255,255,.55); font-size: .9rem; margin-bottom: 1rem;
+    opacity: 0; animation: fadeUp .5s .25s forwards;
+  }
+  .item-from a { color: var(--sage); text-decoration: none; }
+  .item-from a:hover { text-decoration: underline; }
+  .item-badges { display: flex; gap: .6rem; flex-wrap: wrap; opacity: 0; animation: fadeUp .5s .3s forwards; }
+  .ibadge {
+    background: rgba(255,255,255,.13); backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,.2); color: #fff;
+    border-radius: var(--r-pill); padding: .38rem .9rem;
+    font-size: .8rem; font-weight: 500;
+  }
+  .ibadge.organic { background: rgba(82,183,136,.28); border-color: rgba(82,183,136,.5); }
+
+  /* price card */
+  .price-overlap {
+    position: relative; z-index: 10;
+    max-width: var(--max-w); margin: -2.2rem auto 0; padding: 0 var(--px);
+  }
+  .price-card {
+    background: #fff; border-radius: var(--r-card);
+    padding: 1.5rem 2rem; box-shadow: var(--shadow-h);
+    display: flex; align-items: center; gap: 2rem; flex-wrap: wrap;
+  }
+  .price-main { flex: 1; }
+  .price-label { font-size: .72rem; color: var(--mist); letter-spacing: .1em; text-transform: uppercase; margin-bottom: .2rem; }
+  .price-value { font-family: 'Playfair Display', serif; font-size: 2.8rem; font-weight: 700; color: var(--forest); line-height: 1; }
+  .price-unit { font-size: .9rem; color: var(--mist); margin-top: .2rem; }
+  .rating-block { text-align: center; }
+  .rating-big { font-family: 'Playfair Display', serif; font-size: 2.2rem; font-weight: 700; color: var(--amber); line-height: 1; }
+  .rating-stars { color: var(--amber); font-size: 1rem; letter-spacing: .1em; }
+  .cta-btn {
+    background: var(--forest); color: #fff;
+    border: none; border-radius: var(--r-pill);
+    padding: .9rem 2rem; font-family: 'DM Sans', sans-serif;
+    font-size: .95rem; font-weight: 600; cursor: pointer;
+    transition: background .2s, transform .15s;
+  }
+  .cta-btn:hover { background: #1f4d39; transform: translateY(-1px); }
+
+  /* detail section */
+  .detail-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-top: 2rem;
+  }
+  .detail-card {
+    background: #fff; border-radius: var(--r-card);
+    padding: 1.5rem; box-shadow: var(--shadow);
+  }
+  .detail-card h3 { font-family: 'Playfair Display', serif; font-size: 1.1rem; margin-bottom: 1rem; }
+  .detail-row { display: flex; justify-content: space-between; align-items: center; padding: .6rem 0; border-bottom: 1px solid var(--parchment); }
+  .detail-row:last-child { border-bottom: none; }
+  .dr-key { font-size: .82rem; color: var(--mist); }
+  .dr-val { font-size: .88rem; font-weight: 600; color: var(--ink); }
+
+  /* related */
+  .related-scroll { display: flex; gap: 1rem; overflow-x: auto; padding-bottom: 1rem; scrollbar-width: thin; scrollbar-color: var(--mist) transparent; }
+  .rel-card {
+    flex: 0 0 160px; background: #fff; border-radius: 14px;
+    padding: 1rem; box-shadow: 0 2px 12px rgba(0,0,0,.07);
+    transition: transform .2s; cursor: pointer; text-decoration: none; color: inherit; display: block;
+  }
+  .rel-card:hover { transform: translateY(-3px); }
+  .rel-emoji { font-size: 2rem; display: block; margin-bottom: .4rem; }
+  .rel-name { font-family: 'Playfair Display', serif; font-size: .88rem; font-weight: 700; margin-bottom: .1rem; }
+  .rel-price { font-size: .85rem; font-weight: 700; color: var(--forest); }
+
+  @media (max-width: 640px) {
+    .detail-grid { grid-template-columns: 1fr; }
+    .price-card { gap: 1.2rem; }
+    .price-value { font-size: 2.2rem; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="item-hero" id="itemHero">
+  <div class="item-hero-inner">
+    <div class="loading-wrap" style="width:100%"><div class="spinner"></div></div>
+  </div>
+</div>
+
+<div class="price-overlap">
+  <div class="price-card" id="priceCard" style="display:none">
+    <div class="price-main">
+      <div class="price-label">Price per unit</div>
+      <div class="price-value" id="pPrice">—</div>
+      <div class="price-unit" id="pUnit">—</div>
+    </div>
+    <div class="rating-block">
+      <div class="rating-big" id="pRating">—</div>
+      <div class="rating-stars">★★★★★</div>
+      <div style="font-size:.72rem;color:var(--mist);margin-top:.2rem">rating</div>
+    </div>
+    <button class="cta-btn" onclick="alert('Add to cart coming soon!')">Add to Cart</button>
+  </div>
+</div>
+
+<div class="breadcrumb" style="margin-top:2.5rem">
+  <a href="/shops/browse/">Shops</a> <span>›</span>
+  <a href="/items/browse/">Products</a> <span>›</span>
+  <span id="bcName">…</span>
+</div>
+
+<main class="page-main">
+  <div class="detail-grid" id="detailGrid" style="display:none">
+    <div class="detail-card">
+      <h3>Product Details</h3>
+      <div class="detail-row"><span class="dr-key">Unit Size</span><span class="dr-val" id="dUnit">—</span></div>
+      <div class="detail-row"><span class="dr-key">Certified Organic</span><span class="dr-val" id="dOrganic">—</span></div>
+      <div class="detail-row"><span class="dr-key">Rating</span><span class="dr-val" id="dRating">—</span></div>
+    </div>
+    <div class="detail-card">
+      <h3>From the Farm</h3>
+      <div class="detail-row"><span class="dr-key">Producer</span><span class="dr-val" id="dShop">—</span></div>
+      <div class="detail-row"><span class="dr-key">Delivery Time</span><span class="dr-val" id="dTime">—</span></div>
+      <div class="detail-row"><span class="dr-key">Delivery Fee</span><span class="dr-val" id="dFee">—</span></div>
+    </div>
+  </div>
+
+  <div style="margin-top:3rem" id="relatedSection" style="display:none">
+    <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:1.25rem">
+      <h2 style="font-family:'Playfair Display',serif;font-size:1.4rem">From the Same Farm</h2>
+    </div>
+    <div class="related-scroll" id="relatedScroll"></div>
+  </div>
+</main>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+const itemId = window.location.pathname.split('/').filter(Boolean)[1];
+
+async function load() {
+  const [ir, ar] = await Promise.all([fetch(`/api/items/${itemId}/`), fetch('/api/items/')]);
+  const item = await ir.json();
+  const allItems = await ar.json();
+
+  // Hero
+  document.getElementById('bcName').textContent = item.name;
+  document.getElementById('itemHero').innerHTML = `
+    <div class="item-hero-inner">
+      <span class="item-big-emoji">${item.emoji}</span>
+      <div class="item-hero-info">
+        <span class="script">fresh pick</span>
+        <h1>${item.name}</h1>
+        <p class="item-from">by <a href="/shops/browse/">${item.shop_name}</a> · ${item.unit}</p>
+        <div class="item-badges">
+          ${item.is_organic?'<span class="ibadge organic">🌿 Certified Organic</span>':''}
+          <span class="ibadge">★ ${item.rating} rated</span>
+          <span class="ibadge">৳${item.price}</span>
+        </div>
+      </div>
+    </div>`;
+
+  // Price card
+  document.getElementById('pPrice').textContent = '৳' + item.price;
+  document.getElementById('pUnit').textContent  = 'per ' + item.unit;
+  document.getElementById('pRating').textContent = item.rating;
+  document.getElementById('priceCard').style.display = 'flex';
+
+  // Fetch shop for extra detail
+  let shop = null;
+  try { const sr = await fetch(`/api/shops/?search=${encodeURIComponent(item.shop_name)}`); const shops = await sr.json(); shop = shops[0] || null; } catch(_) {}
+
+  document.getElementById('dUnit').textContent    = item.unit;
+  document.getElementById('dOrganic').textContent = item.is_organic ? '✅ Yes' : '✗ No';
+  document.getElementById('dRating').textContent  = '★ ' + item.rating;
+  document.getElementById('dShop').textContent    = item.shop_name;
+  document.getElementById('dTime').textContent    = shop ? shop.delivery_time : '—';
+  document.getElementById('dFee').textContent     = shop ? shop.delivery_fee  : '—';
+  document.getElementById('detailGrid').style.removeProperty('display');
+
+  // Related items from same shop
+  const related = allItems.filter(i => i.shop_name === item.shop_name && i.id !== item.id).slice(0,8);
+  if (related.length) {
+    document.getElementById('relatedSection').style.removeProperty('display');
+    document.getElementById('relatedScroll').innerHTML = related.map(r => `
+      <a class="rel-card" href="/items/${r.id}/browse/">
+        <span class="rel-emoji">${r.emoji}</span>
+        <div class="rel-name">${r.name}</div>
+        <div class="rel-price">৳${r.price}</div>
+      </a>`).join('');
+  }
+}
+
+load().catch(() => {
+  document.getElementById('itemHero').innerHTML = `<div class="empty-state" style="width:100%"><span class="icon">🌧</span><p>Product not found.</p></div>`;
+});
+</script>
+{% endblock %}

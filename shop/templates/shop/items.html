@@ -1,0 +1,150 @@
+{% extends "shop/base.html" %}
+{% block title %}Products — FarmShop{% endblock %}
+{% block nav_items %}active{% endblock %}
+
+{% block extra_head %}
+<style>
+  /* toolbar */
+  .toolbar {
+    position: relative; z-index: 10;
+    max-width: var(--max-w); margin: 0 auto;
+    padding: 0 var(--px);
+    transform: translateY(-50%);
+    display: flex; gap: 1rem; flex-wrap: wrap; align-items: center;
+  }
+  .search-wrap { flex: 1; min-width: 200px; position: relative; }
+  .search-wrap input {
+    width: 100%; padding: .88rem 1rem .88rem 3rem;
+    border: none; border-radius: var(--r-pill);
+    background: #fff; box-shadow: var(--shadow);
+    font-family: 'DM Sans', sans-serif; font-size: .95rem; color: var(--ink);
+    outline: none; transition: box-shadow .2s;
+  }
+  .search-wrap input:focus { box-shadow: 0 0 0 3px rgba(82,183,136,.3), var(--shadow); }
+  .search-wrap input::placeholder { color: var(--mist); }
+  .sicon { position: absolute; left: 1.1rem; top: 50%; transform: translateY(-50%); color: var(--mist); pointer-events: none; }
+  .fpills { display: flex; gap: .45rem; flex-wrap: wrap; }
+  .fpill {
+    padding: .52rem 1rem; border-radius: var(--r-pill);
+    border: 1.5px solid var(--parchment); background: #fff;
+    font-size: .8rem; font-weight: 500; color: var(--earth);
+    cursor: pointer; transition: all .18s;
+    box-shadow: 0 2px 8px rgba(0,0,0,.05); white-space: nowrap;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .fpill:hover { border-color: var(--forest); color: var(--forest); }
+  .fpill.active { background: var(--forest); border-color: var(--forest); color: #fff; }
+
+  /* results header */
+  .results-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 1.5rem; flex-wrap: wrap; gap: .75rem;
+  }
+  .results-count { font-size: .85rem; color: var(--mist); }
+  .results-count strong { color: var(--ink); font-weight: 600; }
+
+  /* grid */
+  .items-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 1.3rem; }
+  .item-card {
+    background: #fff; border-radius: var(--r-card);
+    padding: 1.3rem; box-shadow: var(--shadow);
+    transition: transform .22s, box-shadow .22s; cursor: pointer;
+    position: relative; overflow: hidden;
+    opacity: 0; animation: fadeUp .45s forwards;
+    text-decoration: none; color: inherit; display: block;
+  }
+  .item-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-h); }
+  .color-strip { height: 5px; border-radius: 3px; margin-bottom: 1rem; }
+  .i-emoji { font-size: 2.6rem; display: block; margin-bottom: .6rem; line-height: 1; transition: transform .3s; }
+  .item-card:hover .i-emoji { transform: scale(1.1) rotate(-5deg); }
+  .i-name { font-family: 'Playfair Display', serif; font-size: 1.05rem; font-weight: 700; margin-bottom: .12rem; line-height: 1.25; }
+  .i-shop { font-size: .75rem; color: var(--earth); font-weight: 500; margin-bottom: .1rem; }
+  .i-unit { font-size: .72rem; color: var(--mist); margin-bottom: .8rem; }
+  .i-foot { display: flex; align-items: center; justify-content: space-between; }
+  .i-price { font-size: 1.1rem; font-weight: 700; color: var(--forest); }
+  .i-rating { font-size: .78rem; color: var(--amber); font-weight: 600; }
+  .org-tag {
+    margin-top: .6rem; display: inline-block;
+    background: rgba(45,106,79,.09); color: var(--forest);
+    font-size: .67rem; font-weight: 700;
+    padding: .2rem .55rem; border-radius: var(--r-pill);
+  }
+
+  @media (max-width: 640px) { .toolbar { transform: translateY(-40%); } }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-hero">
+  <div class="page-hero-inner">
+    <span class="script">farm fresh</span>
+    <h1>All <em>Products</em></h1>
+    <p>Every item across all our farms and producers — filter, browse, discover.</p>
+  </div>
+</div>
+
+<div class="toolbar">
+  <div class="search-wrap">
+    <svg class="sicon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    <input type="text" id="searchInput" placeholder="Search products…" />
+  </div>
+  <div class="fpills">
+    <button class="fpill active" data-filter="all">All</button>
+    <button class="fpill" data-filter="organic">🌿 Organic</button>
+  </div>
+</div>
+
+<main class="page-main" style="margin-top:2rem">
+  <div class="results-bar">
+    <p class="section-label" style="margin:0">Products</p>
+    <span class="results-count" id="resultsCount"></span>
+  </div>
+  <div class="items-grid" id="itemsGrid">
+    <div class="loading-wrap" style="grid-column:1/-1"><div class="spinner"></div></div>
+  </div>
+</main>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+let allItems = [], activeFilter = 'all', searchQ = '';
+
+async function load() {
+  const res = await fetch('/api/items/');
+  allItems = await res.json();
+  render();
+}
+
+function render() {
+  const q = searchQ.toLowerCase();
+  const items = allItems.filter(it => {
+    const ms = !q || it.name.toLowerCase().includes(q) || it.shop_name.toLowerCase().includes(q);
+    const mf = activeFilter === 'all' ? true : it.is_organic;
+    return ms && mf;
+  });
+  document.getElementById('resultsCount').innerHTML = `Showing <strong>${items.length}</strong> of ${allItems.length}`;
+  const grid = document.getElementById('itemsGrid');
+  if (!items.length) { grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><span class="icon">🔍</span><p>No products match.</p></div>`; return; }
+  grid.innerHTML = items.map((it,i) => `
+    <a class="item-card" href="/items/${it.id}/browse/" style="animation-delay:${Math.min(i,.15)*0.06}s">
+      <div class="color-strip" style="background:#${it.color_hex}"></div>
+      <span class="i-emoji">${it.emoji}</span>
+      <div class="i-name">${it.name}</div>
+      <div class="i-shop">${it.shop_name}</div>
+      <div class="i-unit">${it.unit}</div>
+      <div class="i-foot">
+        <span class="i-price">৳${it.price}</span>
+        <span class="i-rating">★ ${it.rating}</span>
+      </div>
+      ${it.is_organic?'<span class="org-tag">🌿 Organic</span>':''}
+    </a>`).join('');
+}
+
+document.querySelectorAll('.fpill').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('.fpill').forEach(p => p.classList.remove('active'));
+  b.classList.add('active'); activeFilter = b.dataset.filter; render();
+}));
+document.getElementById('searchInput').addEventListener('input', e => { searchQ = e.target.value; render(); });
+load();
+</script>
+{% endblock %}

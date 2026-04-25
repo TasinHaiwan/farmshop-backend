@@ -1,0 +1,190 @@
+{% extends "shop/base.html" %}
+{% block title %}Categories — FarmShop{% endblock %}
+{% block nav_cats %}active{% endblock %}
+
+{% block extra_head %}
+<style>
+  /* category mosaic */
+  .cat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 1.25rem;
+    margin-bottom: 3.5rem;
+  }
+  .cat-card {
+    background: #fff; border-radius: var(--r-card);
+    padding: 2rem 1.5rem; box-shadow: var(--shadow);
+    text-align: center; cursor: pointer;
+    transition: transform .22s, box-shadow .22s;
+    opacity: 0; animation: fadeUp .45s forwards;
+    position: relative; overflow: hidden;
+  }
+  .cat-card::before {
+    content: ''; position: absolute; inset: 0;
+    background: var(--cat-color, var(--moss));
+    opacity: 0; transition: opacity .22s;
+  }
+  .cat-card:hover { transform: translateY(-5px); box-shadow: var(--shadow-h); }
+  .cat-card:hover::before { opacity: .06; }
+  .cat-card.selected { box-shadow: 0 0 0 2.5px var(--forest), var(--shadow-h); transform: translateY(-3px); }
+  .cat-emoji { font-size: 3rem; display: block; margin-bottom: .75rem; line-height: 1; position: relative; z-index: 1; transition: transform .3s; }
+  .cat-card:hover .cat-emoji { transform: scale(1.15) rotate(-5deg); }
+  .cat-name { font-family: 'Playfair Display', serif; font-size: 1.1rem; font-weight: 700; position: relative; z-index: 1; }
+  .cat-count { font-size: .75rem; color: var(--mist); margin-top: .3rem; position: relative; z-index: 1; }
+
+  /* items for selected category */
+  .items-section { margin-top: 1rem; }
+  .section-head {
+    display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 1.25rem;
+  }
+  .section-head h2 { font-family: 'Playfair Display', serif; font-size: 1.5rem; }
+  .items-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(195px, 1fr)); gap: 1.2rem; }
+  .item-card {
+    background: #fff; border-radius: var(--r-card);
+    padding: 1.2rem; box-shadow: var(--shadow);
+    transition: transform .22s, box-shadow .22s; cursor: pointer;
+    opacity: 0; animation: fadeUp .4s forwards;
+    text-decoration: none; color: inherit; display: block;
+  }
+  .item-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-h); }
+  .color-bar { height: 4px; border-radius: 2px; margin-bottom: .9rem; }
+  .i-emoji { font-size: 2.3rem; display: block; margin-bottom: .5rem; }
+  .i-name { font-family: 'Playfair Display', serif; font-size: 1rem; font-weight: 700; margin-bottom: .1rem; }
+  .i-shop { font-size: .74rem; color: var(--earth); font-weight: 500; margin-bottom: .08rem; }
+  .i-unit { font-size: .72rem; color: var(--mist); margin-bottom: .7rem; }
+  .i-row { display: flex; align-items: center; justify-content: space-between; }
+  .i-price { font-size: 1.05rem; font-weight: 700; color: var(--forest); }
+  .i-rating { font-size: .78rem; color: var(--amber); font-weight: 600; }
+  .org-tag {
+    margin-top: .55rem; display: inline-block;
+    background: rgba(45,106,79,.08); color: var(--forest);
+    font-size: .67rem; font-weight: 700;
+    padding: .18rem .52rem; border-radius: var(--r-pill);
+  }
+
+  /* info banner */
+  .cat-banner {
+    background: linear-gradient(135deg, var(--forest), #1a4535);
+    border-radius: var(--r-card);
+    padding: 2rem; color: #fff;
+    display: flex; align-items: center; gap: 1.5rem;
+    margin-bottom: 2.5rem;
+    box-shadow: var(--shadow);
+  }
+  .cat-banner-emoji { font-size: 3.5rem; line-height: 1; }
+  .cat-banner h2 { font-family: 'Playfair Display', serif; font-size: 1.6rem; margin-bottom: .25rem; }
+  .cat-banner p { color: rgba(255,255,255,.55); font-size: .88rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-hero">
+  <div class="page-hero-inner">
+    <span class="script">curated collections</span>
+    <h1>Shop by <em>Category</em></h1>
+    <p>From fresh fruits to artisan honeys — explore our full range by type.</p>
+  </div>
+</div>
+
+<main class="page-main" style="margin-top:2.5rem">
+  <p class="section-label">All Categories</p>
+  <div class="cat-grid" id="catGrid">
+    <div class="loading-wrap" style="grid-column:1/-1"><div class="spinner"></div></div>
+  </div>
+
+  <div class="items-section" id="itemsSection" style="display:none">
+    <div class="cat-banner" id="catBanner"></div>
+    <div class="section-head">
+      <h2 id="sectionTitle">Products</h2>
+      <a href="/items/browse/">See all →</a>
+    </div>
+    <div class="items-grid" id="itemsGrid"></div>
+  </div>
+</main>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Category → keywords that match item names (simple client-side filter)
+const CAT_KEYWORDS = {
+  'All':        null,
+  'Fruits':     ['tomato','strawberr','apple','mango','banana','berry','fruit'],
+  'Vegetables': ['spinach','carrot','pepper','eggplant','cabbage','broccoli','onion','garlic','potato','cucumber'],
+  'Dairy':      ['yogurt','milk','cheese','butter','cream','ghee'],
+  'Honey':      ['honey'],
+  'Grains':     ['grain','rice','wheat','oat','flour','barley','corn'],
+  'Herbs':      ['basil','mint','thyme','rosemary','herb','cilantro','parsley'],
+  'Nuts':       ['nut','almond','cashew','walnut','peanut','pistachio','pecan'],
+};
+
+let allItems = [], selectedCat = 'All';
+
+async function load() {
+  const [cr, ir] = await Promise.all([fetch('/api/categories/'), fetch('/api/items/')]);
+  const cats = await cr.json();
+  allItems   = await ir.json();
+  renderCats(cats);
+}
+
+function renderCats(cats) {
+  const grid = document.getElementById('catGrid');
+  grid.innerHTML = cats.map((c,i) => {
+    const count = countForCat(c.name);
+    return `<div class="cat-card fade-up" style="animation-delay:${i*.07}s" onclick="selectCat('${c.name}','${c.emoji}')">
+      <span class="cat-emoji">${c.emoji}</span>
+      <div class="cat-name">${c.name}</div>
+      <div class="cat-count">${count} product${count!==1?'s':''}</div>
+    </div>`;
+  }).join('');
+}
+
+function countForCat(name) {
+  if (name === 'All') return allItems.length;
+  const kws = CAT_KEYWORDS[name] || [];
+  return allItems.filter(it => kws.some(k => it.name.toLowerCase().includes(k))).length;
+}
+
+function filterForCat(name) {
+  if (name === 'All') return allItems;
+  const kws = CAT_KEYWORDS[name] || [];
+  return allItems.filter(it => kws.some(k => it.name.toLowerCase().includes(k)));
+}
+
+function selectCat(name, emoji) {
+  selectedCat = name;
+  document.querySelectorAll('.cat-card').forEach(c => c.classList.remove('selected'));
+  event.currentTarget.classList.add('selected');
+
+  const items = filterForCat(name);
+  const section = document.getElementById('itemsSection');
+  section.style.display = 'block';
+  section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  document.getElementById('catBanner').innerHTML = `
+    <span class="cat-banner-emoji">${emoji}</span>
+    <div>
+      <h2>${name}</h2>
+      <p>${items.length} product${items.length!==1?'s':''} available across our farms</p>
+    </div>`;
+  document.getElementById('sectionTitle').textContent = name === 'All' ? 'All Products' : `${name} Products`;
+
+  const grid = document.getElementById('itemsGrid');
+  if (!items.length) { grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><span class="icon">🔍</span><p>No products in this category yet.</p></div>`; return; }
+  grid.innerHTML = items.map((it,i) => `
+    <a class="item-card" href="/items/${it.id}/browse/" style="animation-delay:${Math.min(i,12)*.05}s">
+      <div class="color-bar" style="background:#${it.color_hex}"></div>
+      <span class="i-emoji">${it.emoji}</span>
+      <div class="i-name">${it.name}</div>
+      <div class="i-shop">${it.shop_name}</div>
+      <div class="i-unit">${it.unit}</div>
+      <div class="i-row">
+        <span class="i-price">৳${it.price}</span>
+        <span class="i-rating">★ ${it.rating}</span>
+      </div>
+      ${it.is_organic?'<span class="org-tag">🌿 Organic</span>':''}
+    </a>`).join('');
+}
+
+load();
+</script>
+{% endblock %}
