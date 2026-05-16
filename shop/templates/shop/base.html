@@ -78,11 +78,6 @@
     }
     nav a:hover { color: #fff; }
     nav a.active { color: var(--sage); border-bottom-color: var(--sage); }
-    nav a.admin-link {
-      background: rgba(255,255,255,.1); color: rgba(255,255,255,.7);
-      padding: .35rem .9rem; border-radius: var(--r-pill); border: none; font-size: .8rem;
-    }
-    nav a.admin-link:hover { background: rgba(255,255,255,.18); color: #fff; }
     /* Page hero */
     .page-hero {
       background: var(--forest);
@@ -187,7 +182,6 @@
       <a href="/shops/browse/"     class="{% block nav_shops %}{% endblock %}">Shops</a>
       <a href="/items/browse/"     class="{% block nav_items %}{% endblock %} hide-mob">Products</a>
       <a href="/categories/browse/" class="{% block nav_cats %}{% endblock %} hide-mob">Categories</a>
-      <a href="/admin/" class="admin-link">Admin ↗</a>
     </nav>
   </div>
 </header>
