@@ -78,6 +78,15 @@
     }
     nav a:hover { color: #fff; }
     nav a.active { color: var(--sage); border-bottom-color: var(--sage); }
+    nav a.profile-link {
+      display: inline-flex; align-items: center; gap: .4rem;
+      background: rgba(255,255,255,.1); color: rgba(255,255,255,.82);
+      padding: .4rem .9rem; border-radius: var(--r-pill); border: none; font-size: .8rem;
+    }
+    nav a.profile-link:hover { background: rgba(255,255,255,.18); color: #fff; }
+    nav a.profile-link.active {
+      background: var(--sage); color: var(--forest); border-bottom-color: transparent;
+    }
     /* Page hero */
     .page-hero {
       background: var(--forest);
@@ -182,6 +191,7 @@
       <a href="/shops/browse/"     class="{% block nav_shops %}{% endblock %}">Shops</a>
       <a href="/items/browse/"     class="{% block nav_items %}{% endblock %} hide-mob">Products</a>
       <a href="/categories/browse/" class="{% block nav_cats %}{% endblock %} hide-mob">Categories</a>
+      <a href="/profile/" class="profile-link {% block nav_profile %}{% endblock %}">Profile</a>
     </nav>
   </div>
 </header>

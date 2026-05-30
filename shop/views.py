@@ -25,6 +25,9 @@ def item_detail_page(request, pk):
 def categories_page(request):
     return render(request, 'shop/categories.html')
 
+def profile_page(request):
+    return render(request, 'shop/profile.html')
+
 # API Views
 
 class FoodCategoryListView(generics.ListAPIView):

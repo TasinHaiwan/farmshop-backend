@@ -5,9 +5,10 @@ urlpatterns = [
     #HTML Pages
     path("shops/browse/", views.shops_page, name="shops-page"),
     path("shops/<int:pk>/browse/", views.shop_detail_page, name="shop-detail-page"),
-    path("items/browse", views.items_page, name="items-page"),
+    path("items/browse/", views.items_page, name="items-page"),
     path("items/<int:pk>/browse/", views.item_detail_page, name="item-detail-page"),
     path("categories/browse/", views.categories_page, name="categories-page"),
+    path("profile/", views.profile_page, name="profile-page"),
 
     # API
     path("api/categories/", views.FoodCategoryListView.as_view(), name="category-list"),
